@@ -16,6 +16,7 @@ const { title, description } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     {description && <meta name="description" content={description} />}
+    <link rel="alternate" type="application/rss+xml" title="AI Features" href={`${import.meta.env.BASE_URL}rss.xml`} />
     <title>{title}</title>
   </head>
   <body class="min-h-screen bg-neutral-950 text-neutral-100 antialiased font-sans selection:bg-emerald-500/30">
@@ -32,6 +33,7 @@ const { title, description } = Astro.props;
       <footer class="mt-16 border-t border-neutral-800 pt-6 font-mono text-xs text-neutral-500">
         Built with Astro + Tailwind v4. Source on
         <a href="https://github.com/otisdaley-vg/ai-features" class="text-neutral-300 hover:text-emerald-400">GitHub</a>.
+        Subscribe via <a href={`${import.meta.env.BASE_URL}rss.xml`} class="text-neutral-300 hover:text-emerald-400">RSS</a>.
       </footer>
     </div>
   </body>
