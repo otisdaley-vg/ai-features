@@ -25,7 +25,11 @@ if (d.type === 'slash-command') conditional.push(['Command', `/${d.commandName}`
 ---
 
 <Layout title={`${d.title} — Library`} description={d.summary}>
-  <article>
+  <article
+    data-pagefind-body
+    data-pagefind-meta={`type:artifact, artifactType:${d.type}, title:${d.title}`}
+    data-pagefind-filter="type:artifact"
+  >
     <a href={`${base}/library`} class="font-mono text-xs text-neutral-500 hover:text-emerald-400">
       ← Library
     </a>

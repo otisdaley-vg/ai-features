@@ -23,7 +23,11 @@ const ogImage = `${siteOrigin}${base}/og/issues/${issue.data.issueNumber}.png`;
   description={issue.data.summary}
   ogImage={ogImage}
 >
-  <article>
+  <article
+    data-pagefind-body
+    data-pagefind-meta={`type:issue, issueNumber:${issue.data.issueNumber}, title:${issue.data.title}`}
+    data-pagefind-filter="type:issue"
+  >
     <a href={base || '/'} class="font-mono text-xs text-neutral-500 hover:text-emerald-600 dark:hover:text-emerald-400">
       ← back to issues
     </a>
