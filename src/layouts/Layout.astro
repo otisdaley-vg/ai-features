@@ -4,9 +4,14 @@ import '../styles/global.css';
 interface Props {
   title: string;
   description?: string;
+  ogImage?: string;
 }
 
-const { title, description } = Astro.props;
+const { title, description, ogImage } = Astro.props;
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const siteOrigin = Astro.site?.toString().replace(/\/$/, '') ?? '';
+const resolvedOgImage = ogImage ?? `${siteOrigin}${base}/og/default.png`;
 ---
 
 <html lang="en" class="dark">
@@ -17,6 +22,16 @@ const { title, description } = Astro.props;
     <meta name="generator" content={Astro.generator} />
     {description && <meta name="description" content={description} />}
     <link rel="alternate" type="application/rss+xml" title="AI Features" href={`${import.meta.env.BASE_URL}rss.xml`} />
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content={resolvedOgImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    {description && <meta name="twitter:description" content={description} />}
+    <meta name="twitter:image" content={resolvedOgImage} />
     <title>{title}</title>
   </head>
   <body class="min-h-screen bg-neutral-950 text-neutral-100 antialiased font-sans selection:bg-emerald-500/30">
