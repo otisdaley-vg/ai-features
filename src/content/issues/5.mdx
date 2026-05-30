@@ -1,0 +1,178 @@
+---
+issueNumber: 5
+title: "Starter — CLAUDE.md, the project memory file"
+date: 2026-06-18
+editors:
+  - Otis Daley
+summary: >-
+  CLAUDE.md is the documentation Claude Code actually reads — committed,
+  team-shared, loaded into every conversation in the repo. This issue covers
+  the hierarchy, what belongs in it, a five-section starter template, and how
+  to keep it healthy over time.
+topicsCovered:
+  - claude-code
+  - claude-md
+  - project-memory
+  - conventions
+  - onboarding
+---
+
+## The Idea
+
+CLAUDE.md is per-repo instructions that Claude Code loads into every
+conversation it has inside that directory. Think of it as the documentation
+the AI actually reads — unlike a README, which an agent only consults when
+asked. If your team has house rules ("we use pnpm, not npm", "tests live
+under `e2e/` not `tests/`"), CLAUDE.md is where they go so the agent stops
+guessing.
+
+Three places it can live, with overlapping scope:
+
+- `~/.claude/CLAUDE.md` — **private global**. Applies in every repo on your
+  machine. Your personal preferences, never committed.
+- `<repo>/CLAUDE.md` — **committed, team-shared**. The house rules everyone
+  inherits.
+- Nested `CLAUDE.md` in subdirectories — scoped to that subtree. Use
+  `apps/web/CLAUDE.md` for frontend conventions that don't belong in the
+  root file.
+
+All three load and stack. The repo file is the centre of gravity — it's the
+one your teammates and CI agents share.
+
+## How To
+
+### What to put in
+
+- **Non-obvious conventions.** Test runner, lint command, branch naming,
+  deploy gotchas, the one CLI flag that always trips people up.
+- **Domain glossary.** Two-line definitions of internal terms. The agent
+  will use them back.
+- **Where to find things.** "Specs live in `openspec/`", "ADRs in
+  `docs/adr/`", "feature flags in `config/flags.ts`".
+- **Things you've corrected Claude on twice.** If you've fixed the same
+  drift twice in one week, the third correction belongs in CLAUDE.md.
+
+### What NOT to put in
+
+- Anything obvious from `package.json` or `pyproject.toml`. The agent reads
+  those.
+- Anything that changes weekly — in-flight tickets, sprint goals, current
+  initiatives. They rot fast and contradict reality.
+- Secrets. CLAUDE.md is committed.
+- Anything you wouldn't want a teammate to read.
+
+### Starter template — five sections
+
+The skeleton below is enough for most repos. Worked example for this very
+site: Astro + pnpm + GitHub Pages.
+
+```md
+# AI Features digest
+
+## Stack
+
+- Astro 6 (content collections, MDX), Tailwind v4
+- Package manager: **pnpm** (not npm — lockfile is `pnpm-lock.yaml`)
+- Hosted on GitHub Pages under `/ai-features` base path
+
+## Conventions
+
+- Issues are MDX files under `src/content/issues/<n>.mdx`
+- Frontmatter schema lives in `src/content/config.ts` — update both when
+  fields change
+- Internal links use `import.meta.env.BASE_URL` — hardcoded `/issues/1`
+  will 404 in production (see issue #1)
+- Branch naming: `feat/issue-<n>-<slug>` for new issues
+
+## How we test
+
+- `pnpm build` is the canonical check. It runs Astro's content-collection
+  schema validation — if frontmatter is wrong, the build fails.
+- No unit-test suite. The build is the test.
+
+## How we ship
+
+- Push to `main` → GitHub Actions workflow at `.github/workflows/deploy.yml`
+  builds and deploys to Pages
+- PRs run the same build on every push; merging is blocked if build fails
+- Issues are dated for the **Thursday** they go live — do not retro-date
+
+## Gotchas
+
+- Tailwind v4 here is wired via `@tailwindcss/vite`, **not** the legacy
+  `@astrojs/tailwind` integration. Don't add a `tailwind.config.cjs`.
+- `astro-og-canvas` needs `canvaskit-wasm` and uses a build script — if
+  install warns about ignored scripts, run `pnpm approve-builds`.
+- Pagefind indexes the built `dist/` folder. If search is empty in prod,
+  the post-build step didn't run.
+```
+
+Five sections is a ceiling, not a floor. If a project genuinely has no
+gotchas yet, leave the section out — empty headings train the agent to
+write empty headings.
+
+### Bootstrap with `/init`
+
+Claude Code ships a built-in `/init` command that reads the repo and
+drafts a CLAUDE.md for you. Use it as a starting point, then trim
+ruthlessly — generated files lean generic ("this is a TypeScript
+project"), and generic instructions are pure context tax. Keep the lines
+that are surprising; delete the ones that restate `package.json`.
+
+### Keeping it healthy
+
+Treat CLAUDE.md like code:
+
+- It goes through PR review. A teammate should be able to disagree with a
+  rule before it becomes house policy.
+- The commit history matters. When a convention changes, the diff
+  explains why.
+- Cap it around 150 lines. Past that, the signal-to-noise drops and the
+  agent starts ignoring the back half. Split into nested `CLAUDE.md`
+  files in subtrees instead of letting the root sprawl.
+- Run the `claude-md-improver` skill periodically — it audits for stale
+  rules, contradictions, and obvious-from-the-code lines.
+
+### CLAUDE.md vs the auto-memory system
+
+These are different systems and should not be confused.
+
+- **CLAUDE.md** is committed, deterministic, team-wide. Everyone working
+  in the repo gets the same rules. You edit it as a file.
+- **Auto-memory** is private, per-user, evolving. The agent writes it
+  based on what you tell it across sessions ("we use pnpm", "Otis prefers
+  short PR descriptions"). It lives outside the repo.
+
+Rule of thumb: if a teammate would benefit from knowing it too, it goes
+in CLAUDE.md. If it's a personal preference or a private observation
+about your workflow, leave it to auto-memory.
+
+## Trade-offs / Pitfalls
+
+- **Sprawl.** Every "while I'm here" addition makes the file longer and
+  the agent slower to apply any individual rule. Prune as aggressively as
+  you add.
+- **Stale rules.** A convention that changed six months ago and never got
+  updated will actively mislead the agent. Date-stamping contentious
+  sections helps you spot rot.
+- **Restating the obvious.** "We use TypeScript" wastes context — the
+  agent can see the `.ts` files. Reserve CLAUDE.md for what the agent
+  can't infer.
+- **Treating it as a wishlist.** CLAUDE.md describes how things *are*,
+  not how you'd like them to be. Aspirational rules ("we should write
+  tests for everything") get ignored and erode trust in the rest of the
+  file.
+- **Committing private quirks.** Personal preferences belong in
+  `~/.claude/CLAUDE.md`, not the repo file. If you commit "always use
+  short variable names because I dislike typing", your team will revert
+  it.
+
+## Artifacts referenced
+
+- [`/init`](https://docs.claude.com/en/docs/claude-code/memory) — Claude
+  Code's built-in command for drafting a CLAUDE.md from the current repo.
+- `claude-md-improver` — skill that audits CLAUDE.md files for staleness
+  and quality. Available in the Matt Pocock starter set covered in
+  [issue #3](/issues/3).
+- This site's own CLAUDE.md — the worked example in the template above
+  mirrors the conventions enforced in this repo.
