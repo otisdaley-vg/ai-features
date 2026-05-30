@@ -1,0 +1,61 @@
+---
+issueNumber: 1
+title: "Tracer Bullet: hello from the AI Features digest"
+date: 2026-05-30
+editors:
+  - Otis Daley
+summary: >-
+  The first issue of the AI Features digest — a thin slice that proves the site
+  builds, deploys, and renders structured content end-to-end.
+featuredArtifact:
+  title: "This very site"
+  url: "https://github.com/otisdaley-vg/ai-features"
+  description: >-
+    An Astro + Tailwind v4 site that turns weekly AI-tooling notes into a
+    digest. You are reading the seed issue.
+topicsCovered:
+  - astro
+  - tailwind
+  - github-pages
+  - tracer-bullet
+---
+
+## What's new
+
+The digest exists. This is issue #1: a tracer-bullet slice that wires together
+Astro content collections, Tailwind v4 with the typography plugin, and a
+GitHub Pages deployment workflow. Every subsequent issue extends this same
+schema and route — no scaffolding work to repeat.
+
+The dark-by-default theme is in place. A light-mode toggle ships in a later
+slice.
+
+## Featured artifact
+
+The site itself. The repository at
+[otisdaley-vg/ai-features](https://github.com/otisdaley-vg/ai-features) is the
+artifact — issues are MDX files in `src/content/issues/`, rendered through a
+single dynamic route at `/issues/[issueNumber]`. To add a new issue: drop in a
+new MDX file, open a PR.
+
+## Tip
+
+When configuring Tailwind v4 inside Astro, skip the legacy `tailwind.config.cjs`
+entirely. Import Tailwind from your CSS entry point with
+`@import "tailwindcss";` and register plugins inline with
+`@plugin "@tailwindcss/typography";`. The Vite plugin
+(`@tailwindcss/vite`) wires it all up — Astro's old
+`@astrojs/tailwind` integration is no longer needed.
+
+## Heads-up
+
+This site lives under a base path (`/ai-features`) because it's hosted on
+GitHub Pages under a user subdomain. Always build internal links with
+`import.meta.env.BASE_URL` — hardcoded `/issues/1` URLs will 404 in production.
+
+```astro
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<a href={`${base}/issues/1`}>Issue 1</a>
+```
