@@ -185,7 +185,7 @@ A short tracer-bullet or update issue doesn't need all four — the seed issue u
 The `date` field is also the publish date. An issue whose `date` is in the future is queued: the file lives in `main`, but the site, RSS feed, OG images, and `/issues/<n>` URL all hide it until that date.
 
 - Merge as many future-dated issues as you like — each one appears on its own `date`.
-- The Pages workflow rebuilds daily at 13:00 UTC (see `.github/workflows/deploy.yml`), so a queued issue goes live within ~24 hours of its `date`.
+- The Pages workflow rebuilds on Mondays and Thursdays at 13:00 UTC (see `.github/workflows/deploy.yml`), so a queued issue goes live within ~3–4 days of its `date`. Trigger `workflow_dispatch` manually if you need to publish sooner.
 - In `pnpm dev`, future-dated issues are visible so you can preview before merging. They only get filtered in production builds.
 
 ## Local development
