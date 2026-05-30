@@ -8,6 +8,9 @@ summary: >-
 author: Otis Daley
 dateAdded: 2026-05-30
 installPath: ~/.claude/skills/tdd/SKILL.md
+relatedArtifacts:
+  - recent-pr-review
+  - test-failure-triage-agent
 tags:
   - tdd
   - testing

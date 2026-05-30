@@ -22,6 +22,35 @@ if (d.type === 'skill') conditional.push(['Install path', d.installPath]);
 if (d.type === 'settings-snippet') conditional.push(['Settings scope', d.settingsScope]);
 if (d.type === 'hook') conditional.push(['Hook event', d.hookEvent]);
 if (d.type === 'slash-command') conditional.push(['Command', `/${d.commandName}`]);
+
+const allArtifacts = await getCollection('artifacts');
+const related = (d.relatedArtifacts ?? [])
+  .map((slug) => allArtifacts.find((a) => a.id === slug))
+  .filter((a): a is CollectionEntry<'artifacts'> => Boolean(a));
+
+const hookSnippet =
+  d.type === 'hook'
+    ? `{
+  "hooks": {
+    "${d.hookEvent}": [
+      { "type": "command", "command": "..." }
+    ]
+  }
+}`
+    : '';
+
+const settingsScopePath =
+  d.type === 'settings-snippet'
+    ? d.settingsScope === 'user'
+      ? '~/.claude/settings.json'
+      : '.claude/settings.json'
+    : '';
+
+const bodyProseClass =
+  'prose prose-invert prose-neutral max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h2:mt-10 prose-h2:border-b prose-h2:border-neutral-800 prose-h2:pb-2 prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:underline prose-code:rounded prose-code:bg-neutral-900 prose-code:px-1 prose-code:py-0.5 prose-code:text-emerald-300 prose-code:before:content-none prose-code:after:content-none prose-pre:bg-neutral-900 prose-pre:border prose-pre:border-neutral-800';
+
+const playbookBodyClass =
+  'prose prose-invert prose-neutral max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h2:mt-10 prose-h2:border-b prose-h2:border-neutral-800 prose-h2:pb-2 prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:underline prose-code:rounded prose-code:bg-neutral-900 prose-code:px-1 prose-code:py-0.5 prose-code:text-emerald-300 prose-code:before:content-none prose-code:after:content-none prose-pre:bg-neutral-900 prose-pre:border prose-pre:border-neutral-800 prose-ol:list-decimal prose-ol:pl-6 prose-ol:space-y-3 prose-ol:marker:text-emerald-400 prose-ol:marker:font-mono prose-ol:marker:font-semibold prose-li:pl-2';
 ---
 
 <Layout title={`${d.title} — Library`} description={d.summary}>
@@ -29,6 +58,16 @@ if (d.type === 'slash-command') conditional.push(['Command', `/${d.commandName}`
     <a href={`${base}/library`} class="font-mono text-xs text-neutral-500 hover:text-emerald-400">
       ← Library
     </a>
+
+    {d.deprecated && (
+      <div
+        role="alert"
+        class="mt-4 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
+      >
+        <strong class="font-semibold text-amber-300">Deprecated.</strong>{' '}
+        This artifact is deprecated. Links from older issues still resolve here so historic references aren't broken — but prefer a current alternative for new work.
+      </div>
+    )}
 
     <header class="mt-4 mb-8 border-b border-neutral-800 pb-6">
       <div class="flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-wider">
@@ -91,9 +130,123 @@ if (d.type === 'slash-command') conditional.push(['Command', `/${d.commandName}`
       )}
     </header>
 
-    <div class="prose prose-invert prose-neutral max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h2:mt-10 prose-h2:border-b prose-h2:border-neutral-800 prose-h2:pb-2 prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:underline prose-code:rounded prose-code:bg-neutral-900 prose-code:px-1 prose-code:py-0.5 prose-code:text-emerald-300 prose-code:before:content-none prose-code:after:content-none prose-pre:bg-neutral-900 prose-pre:border prose-pre:border-neutral-800">
+    {d.type !== 'playbook' && (
+      <section class="mb-10 rounded-md border border-neutral-800 bg-neutral-950 p-5">
+        <h2 class="font-mono text-xs uppercase tracking-wider text-neutral-500">How to use</h2>
+
+        {d.type === 'prompt' && (
+          <div class="mt-3 space-y-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-300">
+                target: {d.targetModel}
+              </span>
+            </div>
+            <p class="text-sm text-neutral-300">
+              Drop into your prompt directly. Tuned for <code class="rounded bg-neutral-900 px-1 py-0.5 font-mono text-xs text-emerald-300">{d.targetModel}</code>; other Claude models will follow it but with less precision.
+            </p>
+          </div>
+        )}
+
+        {d.type === 'skill' && (
+          <div class="mt-3 space-y-3">
+            <p class="text-sm text-neutral-300">
+              Install to <code class="rounded bg-neutral-900 px-1 py-0.5 font-mono text-xs text-emerald-300">{d.installPath}</code>:
+            </p>
+            <pre class="overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900 p-3 font-mono text-xs text-emerald-300"><code>{`cp ${artifact.id}.md ${d.installPath}`}</code></pre>
+            <p class="text-xs text-neutral-500">
+              Claude Code auto-discovers skills under <code class="rounded bg-neutral-900 px-1 py-0.5 font-mono text-emerald-300">~/.claude/skills/</code> (user) and <code class="rounded bg-neutral-900 px-1 py-0.5 font-mono text-emerald-300">.claude/skills/</code> (project).
+            </p>
+          </div>
+        )}
+
+        {d.type === 'slash-command' && (
+          <div class="mt-3 space-y-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-300">
+                /{d.commandName}
+              </span>
+            </div>
+            <p class="text-sm text-neutral-300">
+              Drop the markdown file into <code class="rounded bg-neutral-900 px-1 py-0.5 font-mono text-xs text-emerald-300">~/.claude/commands/</code> (user-wide) or <code class="rounded bg-neutral-900 px-1 py-0.5 font-mono text-xs text-emerald-300">.claude/commands/</code> (project-scoped) to invoke as <code class="rounded bg-neutral-900 px-1 py-0.5 font-mono text-xs text-emerald-300">/{d.commandName}</code>.
+            </p>
+          </div>
+        )}
+
+        {d.type === 'subagent' && (
+          <div class="mt-3 space-y-3">
+            <p class="text-sm text-neutral-300">
+              Use via the <code class="rounded bg-neutral-900 px-1 py-0.5 font-mono text-xs text-emerald-300">Agent</code> tool:
+            </p>
+            <pre class="overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900 p-3 font-mono text-xs text-emerald-300"><code>{`Agent({\n  subagent_type: '${artifact.id}',\n  description: '...',\n  prompt: '...',\n})`}</code></pre>
+            <p class="text-xs text-neutral-500">
+              Drop the agent definition into <code class="rounded bg-neutral-900 px-1 py-0.5 font-mono text-emerald-300">.claude/agents/</code> first so the harness can resolve the <code class="rounded bg-neutral-900 px-1 py-0.5 font-mono text-emerald-300">subagent_type</code>.
+            </p>
+          </div>
+        )}
+
+        {d.type === 'hook' && (
+          <div class="mt-3 space-y-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-300">
+                event: {d.hookEvent}
+              </span>
+            </div>
+            <p class="text-sm text-neutral-300">
+              Wire up in <code class="rounded bg-neutral-900 px-1 py-0.5 font-mono text-xs text-emerald-300">settings.json</code>:
+            </p>
+            <pre class="overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900 p-3 font-mono text-xs text-emerald-300"><code>{hookSnippet}</code></pre>
+          </div>
+        )}
+
+        {d.type === 'settings-snippet' && (
+          <div class="mt-3 space-y-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 font-mono text-xs text-emerald-300">
+                scope: {d.settingsScope}
+              </span>
+            </div>
+            <p class="text-sm text-neutral-300">
+              Merge the snippet from the body below into <code class="rounded bg-neutral-900 px-1 py-0.5 font-mono text-xs text-emerald-300">{settingsScopePath}</code>. If the file already exists, merge keys rather than overwriting.
+            </p>
+          </div>
+        )}
+      </section>
+    )}
+
+    {d.type === 'playbook' && (
+      <div class="mb-10 rounded-md border border-neutral-800 bg-neutral-950 p-5">
+        <h2 class="font-mono text-xs uppercase tracking-wider text-neutral-500">Playbook</h2>
+        <p class="mt-3 text-sm text-neutral-300">
+          Walk these steps in order — each gates the next. If you can't answer a step, the work isn't ready.
+        </p>
+      </div>
+    )}
+
+    <div class={d.type === 'playbook' ? playbookBodyClass : bodyProseClass}>
       <Content />
     </div>
+
+    {related.length > 0 && (
+      <section class="mt-12 border-t border-neutral-800 pt-8">
+        <h2 class="font-mono text-xs uppercase tracking-wider text-neutral-500">Related</h2>
+        <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {related.map((a) => (
+            <li>
+              <a
+                href={`${base}/artifacts/${a.id}/`}
+                class="block rounded-md border border-neutral-800 bg-neutral-950 p-4 transition hover:border-emerald-500/40 hover:bg-neutral-900"
+              >
+                <div class="font-mono text-xs uppercase tracking-wider text-neutral-500">
+                  {a.data.type} · {a.data.topic}
+                </div>
+                <div class="mt-1 font-medium text-neutral-200">{a.data.title}</div>
+                <p class="mt-1 line-clamp-2 text-sm text-neutral-400">{a.data.summary}</p>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
 
     <footer class="mt-12 border-t border-neutral-800 pt-6">
       <a href={`${base}/library`} class="font-mono text-xs text-neutral-500 hover:text-emerald-400">

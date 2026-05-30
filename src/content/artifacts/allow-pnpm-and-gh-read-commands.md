@@ -9,6 +9,7 @@ summary: >-
 author: Otis Daley
 dateAdded: 2026-05-30
 settingsScope: project
+deprecated: true
 tags:
   - permissions
   - pnpm
