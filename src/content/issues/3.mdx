@@ -1,0 +1,165 @@
+---
+issueNumber: 3
+title: "Starter skills for Claude Code"
+date: 2026-06-13
+editors:
+  - Otis Daley
+summary: >-
+  An opinionated starter set of Claude Code skills — where to find them, how
+  to install them safely, and when to reach for each one.
+featuredArtifact:
+  title: "mattpocock/skills"
+  url: "https://github.com/mattpocock/skills"
+  description: >-
+    The starter source repo. Engineering and productivity skills curated by
+    Matt Pocock, installable via skills.sh.
+topicsCovered:
+  - skills
+  - claude-code
+  - tooling
+  - security
+---
+
+## The Idea
+
+Skills are the highest-leverage extension point in Claude Code. They're
+scoped, discoverable, and composable — a SKILL.md plus a directory of
+resources that the agent can load on demand. But picking a starter set is
+hard. There are hundreds out there, most teams over-install, and every skill
+you add is a chunk of context the agent has to consider.
+
+This issue gives an opinionated starter set that pays for itself within the
+first week, and walks through the install and security path so you can adopt
+it without copy-pasting from a random gist.
+
+## How To
+
+### 1. Where to find skills
+
+[skills.sh](https://skills.sh) is the canonical registry. The only
+prerequisite is Node — install it via skills.sh's bootstrap or your usual
+node manager.
+
+The install pattern is:
+
+```sh
+npx skills@latest add <author>/<repo>
+```
+
+Worked example — install Matt Pocock's set:
+
+```sh
+npx skills@latest add mattpocock/skills
+```
+
+### 2. Security: downloading untrusted skills
+
+Skills can ship arbitrary instructions and tool-use patterns. Treat them
+like running someone else's code.
+
+- **Read the SKILL.md before adding.** Look for file-system writes outside
+  the project, network calls, anything that touches credentials or `.env`.
+- **Prefer authors you can identify.** Check the GitHub history, public
+  profile, and repo activity before trusting a skill with your tool
+  permissions.
+- **Pin to a commit or tag** where the registry supports it. Avoid
+  `@latest` for skills that touch sensitive paths — pinning means an
+  upstream change can't silently rewrite the prompt the agent runs.
+- **Audit `.claude/skills/` after install.** A skill is just a directory.
+  Diff it before committing.
+
+### 3. Starter skills (opinionated)
+
+For each: what it does, when to reach for it, when not to.
+
+**Engineering**
+
+- [`diagnose`](https://github.com/mattpocock/skills/blob/main/skills/engineering/diagnose/SKILL.md) —
+  disciplined reproduce → minimise → hypothesise → instrument → fix →
+  regression-test loop. Use for hard bugs and perf regressions; skip for
+  one-line typo fixes.
+- [`grill-with-docs`](https://github.com/mattpocock/skills/blob/main/skills/engineering/grill-with-docs/SKILL.md) —
+  stress-tests a plan against `CONTEXT.md` and ADRs (Architecture Decision
+  Records — short markdown files in `docs/adr/` that capture *why* a
+  non-obvious technical choice was made), updates docs inline. Use before
+  non-trivial implementation work; needs `CONTEXT.md` + `docs/adr/` to
+  exist.
+- [`triage`](https://github.com/mattpocock/skills/blob/main/skills/engineering/triage/SKILL.md) —
+  state-machine triage of issues by role. Use when the inbox is backed up;
+  not for one-off bug filing.
+- [`improve-codebase-architecture`](https://github.com/mattpocock/skills/blob/main/skills/engineering/improve-codebase-architecture/SKILL.md) —
+  finds deepening and consolidation opportunities informed by domain
+  language. Use on quarterly health checks; not for greenfield code.
+- [`setup-matt-pocock-skills`](https://github.com/mattpocock/skills/blob/main/skills/engineering/setup-matt-pocock-skills/SKILL.md) —
+  one-time scaffolder for the per-repo config the other skills rely on.
+  Run once per repo *before* `to-issues`, `to-prd`, `triage`, `diagnose`,
+  `tdd`, `improve-codebase-architecture`, `zoom-out`.
+- [`tdd`](https://github.com/mattpocock/skills/blob/main/skills/engineering/tdd/SKILL.md) —
+  red-green-refactor, one vertical slice at a time. Use for new features
+  and bug fixes with clear acceptance; skip for spikes and throwaway
+  prototypes.
+- [`to-issues`](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-issues/SKILL.md) —
+  breaks a plan or PRD (Product Requirements Document — the single
+  source-of-truth doc that states what is being built and the acceptance
+  criteria, before any work starts) into independently-grabbable GitHub
+  issues using vertical slices. Use after a PRD lands; not for solo work
+  you'll ship in one sitting.
+- [`to-prd`](https://github.com/mattpocock/skills/blob/main/skills/engineering/to-prd/SKILL.md) —
+  synthesises the current conversation into a PRD and submits it as a
+  GitHub issue. Use after a real design discussion; skip when there's
+  nothing to synthesise.
+- [`zoom-out`](https://github.com/mattpocock/skills/blob/main/skills/engineering/zoom-out/SKILL.md) —
+  asks the agent to step back and give a higher-level read on unfamiliar
+  code. Use when onboarding to a new module; not when you already have the
+  model.
+- [`prototype`](https://github.com/mattpocock/skills/blob/main/skills/engineering/prototype/SKILL.md) —
+  throwaway runnable prototype (terminal app or several UI variants). Use
+  to flush out state and UI questions before committing to a design; not
+  for production code.
+
+**Productivity**
+
+- [`caveman`](https://github.com/mattpocock/skills/blob/main/skills/productivity/caveman/SKILL.md) —
+  ultra-compressed communication, roughly a 75% token cut. Use on long
+  sessions where you don't need prose; not when you need the agent to
+  teach.
+- [`grill-me`](https://github.com/mattpocock/skills/blob/main/skills/productivity/grill-me/SKILL.md) —
+  interviews you about a plan until every decision branch is resolved. Use
+  to stress-test your own thinking; not for quick decisions.
+- [`handoff`](https://github.com/mattpocock/skills/blob/main/skills/productivity/handoff/SKILL.md) —
+  compacts the conversation into a handoff doc for another agent. Use at
+  end-of-session or when switching models; not mid-flow.
+- [`write-a-skill`](https://github.com/mattpocock/skills/blob/main/skills/productivity/write-a-skill/SKILL.md) —
+  scaffolds a new skill with progressive disclosure and bundled resources.
+  Use once you spot a repeated workflow; skip until you have a real
+  pattern to capture.
+
+**Plugins (separate install path)**
+
+Playwright is also worth installing, but it doesn't come through
+skills.sh — it ships as a Claude **plugin**, installed via the Claude
+plugin path rather than `npx skills@latest add`. Mentally file it next to
+your skills, but install it through the plugin docs.
+
+## Trade-offs / Pitfalls
+
+- **Over-installing.** Each skill is context the agent must consider. A
+  starter set is not "install everything" — remove what you don't use.
+- **Stale skills.** Skills tied to a workflow rot when the workflow
+  changes. Re-audit quarterly.
+- **Skill collisions.** Two skills covering similar ground confuse
+  routing. Pick one per niche.
+- **Setup ordering.** `setup-matt-pocock-skills` must run first or the
+  engineering skills behave oddly. Run it once per repo before anything
+  else in the set.
+- **Security ceiling.** Even an audited skill can pull in a sub-resource
+  that changes later. Pin where you can, and re-diff `.claude/skills/`
+  after upgrades.
+
+## Artifacts referenced
+
+- [skills.sh](https://skills.sh) — the registry.
+- [mattpocock/skills](https://github.com/mattpocock/skills) — the starter
+  source repo for the engineering and productivity skills above.
+- Playwright (Claude plugin) — installed via the Claude plugin path, not
+  skills.sh.
