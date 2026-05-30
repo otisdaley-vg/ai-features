@@ -1,3 +1,48 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 @custom-variant dark (&:where(.dark, .dark *));
+
+.code-block-wrapper {
+  position: relative;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: rgb(212 212 212);
+  background-color: rgb(38 38 38 / 0.6);
+  border: 1px solid rgb(82 82 82 / 0.6);
+  border-radius: 0.25rem;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 120ms ease, background-color 120ms ease, color 120ms ease;
+}
+
+.copy-btn:hover,
+.copy-btn:focus-visible {
+  opacity: 1;
+  background-color: rgb(64 64 64 / 0.9);
+  color: rgb(245 245 245);
+}
+
+.copy-btn:focus-visible {
+  outline: 2px solid rgb(16 185 129);
+  outline-offset: 2px;
+}
+
+:where(:not(.dark, .dark *)) .copy-btn {
+  color: rgb(64 64 64);
+  background-color: rgb(245 245 245 / 0.8);
+  border-color: rgb(212 212 212);
+}
+
+:where(:not(.dark, .dark *)) .copy-btn:hover,
+:where(:not(.dark, .dark *)) .copy-btn:focus-visible {
+  background-color: rgb(255 255 255);
+  color: rgb(23 23 23);
+}
