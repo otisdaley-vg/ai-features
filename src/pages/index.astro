@@ -11,10 +11,10 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 <Layout title="ai-features — weekly AI tooling digest" description="A weekly digest of AI features, tooling, and tips.">
   <section class="mb-12">
-    <h1 class="text-3xl font-semibold tracking-tight text-neutral-50 sm:text-4xl">
+    <h1 class="text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl dark:text-neutral-50">
       ai-features
     </h1>
-    <p class="mt-3 max-w-prose text-neutral-400">
+    <p class="mt-3 max-w-prose text-neutral-600 dark:text-neutral-400">
       A weekly digest of AI features, tooling experiments, and the occasional heads-up.
     </p>
   </section>
@@ -23,21 +23,21 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     <h2 class="mb-4 font-mono text-xs uppercase tracking-wider text-neutral-500">
       Issues
     </h2>
-    <ul class="divide-y divide-neutral-800 border-y border-neutral-800">
+    <ul class="divide-y divide-neutral-200 border-y border-neutral-200 dark:divide-neutral-800 dark:border-neutral-800">
       {issues.map((issue) => (
         <li class="py-4">
           <a
             href={`${base}/issues/${issue.data.issueNumber}`}
             class="group flex items-baseline gap-4"
           >
-            <span class="font-mono text-sm text-emerald-400">
+            <span class="font-mono text-sm text-emerald-600 dark:text-emerald-400">
               #{String(issue.data.issueNumber).padStart(3, '0')}
             </span>
             <div class="flex-1">
-              <div class="font-medium text-neutral-100 group-hover:text-emerald-400">
+              <div class="font-medium text-neutral-900 group-hover:text-emerald-600 dark:text-neutral-100 dark:group-hover:text-emerald-400">
                 {issue.data.title}
               </div>
-              <div class="mt-1 text-sm text-neutral-400">{issue.data.summary}</div>
+              <div class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{issue.data.summary}</div>
               <div class="mt-1 font-mono text-xs text-neutral-500">
                 <time datetime={issue.data.date.toISOString()}>
                   {issue.data.date.toISOString().slice(0, 10)}

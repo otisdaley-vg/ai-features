@@ -9,7 +9,7 @@ interface Props {
 const { title, description } = Astro.props;
 ---
 
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}favicon.svg`} />
@@ -18,26 +18,69 @@ const { title, description } = Astro.props;
     {description && <meta name="description" content={description} />}
     <link rel="alternate" type="application/rss+xml" title="AI Features" href={`${import.meta.env.BASE_URL}rss.xml`} />
     <title>{title}</title>
+    <script is:inline>
+      (() => {
+        const stored = localStorage.getItem('ai-features-theme');
+        let theme;
+        if (stored === 'light' || stored === 'dark') {
+          theme = stored;
+        } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+          theme = 'light';
+        } else {
+          theme = 'dark';
+        }
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+      })();
+    </script>
   </head>
-  <body class="min-h-screen bg-neutral-950 text-neutral-100 antialiased font-sans selection:bg-emerald-500/30">
+  <body class="min-h-screen bg-white text-neutral-900 antialiased font-sans selection:bg-emerald-500/30 dark:bg-neutral-950 dark:text-neutral-100">
     <div class="mx-auto max-w-3xl px-6 py-12">
-      <header class="mb-12 flex items-center justify-between border-b border-neutral-800 pb-6">
-        <a href={import.meta.env.BASE_URL} class="font-mono text-sm tracking-tight text-neutral-300 hover:text-emerald-400">
-          <span class="text-emerald-400">$</span> ai-features
+      <header class="mb-12 flex items-center justify-between border-b border-neutral-200 pb-6 dark:border-neutral-800">
+        <a href={import.meta.env.BASE_URL} class="font-mono text-sm tracking-tight text-neutral-700 hover:text-emerald-600 dark:text-neutral-300 dark:hover:text-emerald-400">
+          <span class="text-emerald-600 dark:text-emerald-400">$</span> ai-features
         </a>
-        <span class="font-mono text-xs text-neutral-500">otisdaley-vg</span>
+        <div class="flex items-center gap-4">
+          <span class="font-mono text-xs text-neutral-500">otisdaley-vg</span>
+          <button
+            id="theme-toggle"
+            type="button"
+            aria-label="Toggle theme"
+            class="inline-flex h-8 w-8 items-center justify-center rounded-sm border border-neutral-200 text-neutral-700 hover:border-emerald-600 hover:text-emerald-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-neutral-800 dark:text-neutral-300 dark:hover:border-emerald-400 dark:hover:text-emerald-400"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 dark:hidden" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden h-4 w-4 dark:inline-block" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          </button>
+        </div>
       </header>
       <main>
         <slot />
       </main>
-      <footer class="mt-16 border-t border-neutral-800 pt-6 font-mono text-xs text-neutral-500">
+      <footer class="mt-16 border-t border-neutral-200 pt-6 font-mono text-xs text-neutral-500 dark:border-neutral-800">
         Built with Astro + Tailwind v4. Source on
-        <a href="https://github.com/otisdaley-vg/ai-features" class="text-neutral-300 hover:text-emerald-400">GitHub</a>.
-        Subscribe via <a href={`${import.meta.env.BASE_URL}rss.xml`} class="text-neutral-300 hover:text-emerald-400">RSS</a>.
+        <a href="https://github.com/otisdaley-vg/ai-features" class="text-neutral-700 hover:text-emerald-600 dark:text-neutral-300 dark:hover:text-emerald-400">GitHub</a>.
+        Subscribe via <a href={`${import.meta.env.BASE_URL}rss.xml`} class="text-neutral-700 hover:text-emerald-600 dark:text-neutral-300 dark:hover:text-emerald-400">RSS</a>.
       </footer>
     </div>
     <script>
       import '../scripts/copy-code.ts';
+    </script>
+    <script>
+      function bindThemeToggle() {
+        const btn = document.getElementById('theme-toggle');
+        if (!btn || btn.dataset.bound === '1') return;
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', () => {
+          const isDark = document.documentElement.classList.toggle('dark');
+          localStorage.setItem('ai-features-theme', isDark ? 'dark' : 'light');
+        });
+      }
+      bindThemeToggle();
+      document.addEventListener('astro:page-load', bindThemeToggle);
     </script>
   </body>
 </html>
