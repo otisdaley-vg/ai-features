@@ -1,0 +1,197 @@
+---
+issueNumber: 4
+title: "Starter — Install Claude Code & first run"
+date: 2026-06-15
+editors:
+  - Otis Daley
+summary: >-
+  Zero-to-typing-prompts for Claude Code — install the CLI, log in, pick a
+  model, and learn the four permission modes before you accidentally yolo
+  your main repo.
+featuredArtifact:
+  title: "Claude Code CLI"
+  url: "https://www.npmjs.com/package/@anthropic-ai/claude-code"
+  description: >-
+    The official terminal client. Installed once globally via npm, scoped
+    per-project at runtime by the directory you launch it from.
+topicsCovered:
+  - claude-code
+  - install
+  - permissions
+  - model-picker
+  - safety
+  - onboarding
+---
+
+## The Idea
+
+Claude Code is a terminal client that drives Claude against a real project
+directory. It reads files, runs shell commands, edits code — and it does
+all of that with whatever blast radius you grant it. The whole experience
+hinges on two early decisions most juniors get wrong: which model is
+running, and which permission mode it's running in.
+
+This issue walks from `npm install` to a working session with the right
+model and the right guardrails. Stop here before installing any
+[[3|starter skills]] or wiring up automation — get this baseline first.
+
+## How To
+
+### 1. Install the CLI
+
+Claude Code requires Node 20+. If you don't have it yet, get a node
+manager sorted first (a future OpenSpec issue will cover this end-to-end).
+
+```sh
+npm install -g @anthropic-ai/claude-code
+claude --version
+```
+
+The CLI is the canonical surface. Anchor here. The desktop app, the web
+app at [claude.ai/code](https://claude.ai/code), and the VS Code /
+JetBrains extensions all exist and are useful — but everything in this
+digest assumes the CLI, and the CLI is where the permission model is most
+visible.
+
+### 2. Log in
+
+```sh
+claude login
+```
+
+This opens an OAuth flow in your browser. Two auth paths:
+
+- **Pro/Max plan auth.** If you have a Claude Pro or Max subscription,
+  this routes usage through your plan quota. No per-token billing.
+- **API-key auth.** If you have an Anthropic console key in the env
+  (`ANTHROPIC_API_KEY`), the CLI will use that instead — usage is billed
+  per token against your console workspace.
+
+If you have both: **prefer plan auth** while you're learning. Plan quota
+is predictable; API spend on an undisciplined session is not. Switch to
+the key later when you have a reason (higher limits, workspace billing,
+specific model access).
+
+### 3. Security up front
+
+Claude Code can run shell commands. Before your first session, internalise
+two things:
+
+- The **default permission mode** prompts before every non-allowlisted
+  tool call. That's the safety net.
+- The **bypass mode** (`--dangerously-skip-permissions`, "yolo") skips
+  every prompt. It exists for sandboxed throwaway environments. Day-one
+  juniors should not be reaching for it. We'll come back to this below.
+
+### 4. Your first session
+
+Claude Code is **project-scoped**. `cd` into a repo *first*, then launch:
+
+```sh
+cd ~/code/some-project
+claude
+```
+
+Type a prompt. Watch the tool calls. The first few times, approve
+permissions one at a time and read what each call is going to do —
+`Read(file)`, `Bash(npm test)`, `Edit(src/foo.ts)`. Pattern-match what
+"normal" looks like before you start auto-approving.
+
+### 5. Pick the right model
+
+In-session, `/model` opens the picker. Three to know:
+
+- **Opus 4.7** — default for hard work. Best at planning, multi-file
+  refactors, debugging tangled state.
+- **Sonnet 4.6** — faster and cheaper. Strong default for mechanical
+  edits, focused fixes, anything where you've already done the thinking.
+- **Haiku 4.5** — cheapest. Use for high-volume mechanical tasks, large
+  search/grep work, or scripted batch runs.
+
+`/fast` toggles Opus *fast mode* — same Opus model, faster output. Opus
+4.6 and 4.7 only. Not a different (cheaper) model under the hood; just a
+latency setting.
+
+### 6. The essential first commands
+
+- `/help` — built-in command list. Use this before guessing.
+- `/clear` — drop the conversation, keep the session. Reach for it when
+  the context is contaminated (wrong branch, wrong file read, dead-end
+  debugging).
+- `/config` — theme, default model, telemetry.
+- `/init` — generate a starter `CLAUDE.md` for the current repo. A future
+  issue covers what to put in it; for now, running `/init` once gives the
+  agent a useful baseline of project context.
+
+### 7. The four permission modes
+
+This is the part to actually learn. Shift+Tab cycles modes in-session.
+
+| Mode | Flag | What it does |
+| --- | --- | --- |
+| Default (ask) | *(none)* | Prompts on every non-allowlisted tool call. Slowest, safest. Start here. |
+| Accept Edits | `--permission-mode acceptEdits` | Auto-approves `Write` / `Edit` / `NotebookEdit`. Still prompts on `Bash`. Sweet spot for active editing. |
+| Plan Mode | `--permission-mode plan` | Read-only. `Read` / `Glob` / `Grep` / think — no writes, no shell. Exit via `ExitPlanMode`. |
+| Bypass Permissions | `--dangerously-skip-permissions` | Skips every prompt. Reserve for sandboxed/throwaway environments. |
+
+A few rules that aren't obvious:
+
+- **Shift+Tab** cycles forward through Default → Accept Edits → Plan and
+  back. Quickest way to switch as the work changes shape.
+- **Plan Mode is the underrated one.** Before unleashing edits on
+  unfamiliar code, drop into plan mode and let the agent read its way to
+  a real proposal. Then exit and execute.
+- **Bypass can't be downgraded mid-session.** If you launched with
+  `--dangerously-skip-permissions`, you can't Shift+Tab back to safety —
+  restart the CLI.
+
+### 8. Surgical alternatives
+
+If a full mode change is too coarse, two narrower knobs:
+
+```sh
+claude --allowedTools "Read,Glob,Grep,Bash(git status:*)"
+```
+
+Whitelists per-tool — the agent gets exactly those calls without
+prompting, and nothing else. The `Bash(git status:*)` syntax allowlists
+only that command prefix.
+
+```sh
+claude --add-dir ../sibling-repo
+```
+
+Extends filesystem reach beyond the launch directory. Useful when you
+genuinely need cross-repo context; not useful as a default.
+
+## Trade-offs / Pitfalls
+
+- **Don't pair bypass with automation.** `--dangerously-skip-permissions`
+  + a recurring `/loop` + an auto-push hook is how you end up with a
+  force-pushed branch you didn't write. Each piece is fine in isolation.
+  Stacked, they remove every checkpoint.
+- **Don't yolo while logged into prod CLIs.** If `gcloud`, `kubectl`, or
+  `aws` are authenticated against production in the same shell, bypass
+  mode inherits those credentials. Sandbox first, or `unset` the
+  credentials, or use a separate shell profile.
+- **Don't yolo your home directory or your main repo.** Bypass is for
+  throwaway environments — a fresh container, a scratch worktree, a VM
+  you can blow away. Not the directory with your dotfiles, your SSH
+  keys, or six months of uncommitted work.
+- **The agent can't see what you don't put in a tool call.** If you
+  expect Claude to know about a file, it has to have read it (or you
+  have to paste it, or `CLAUDE.md` has to reference it). Silent
+  assumptions are the #1 cause of "why did it do that?".
+- **`Ctrl+C` cancels cleanly.** Use it the moment a tool call surprises
+  you. Don't sit through a long `Bash` you didn't intend to approve.
+- **Plan vs. Accept Edits is a workflow choice, not a preference.** Plan
+  for unfamiliar code or risky changes; Accept Edits once you've scoped
+  the work and just want the typing done. Switching mid-task is normal.
+
+## Artifacts referenced
+
+- [@anthropic-ai/claude-code](https://www.npmjs.com/package/@anthropic-ai/claude-code) — the CLI on npm.
+- [claude.ai/code](https://claude.ai/code) — the web client, for reference.
+- Future issue: Node setup via OpenSpec (forward link).
+- Future issue: writing a useful `CLAUDE.md` (forward link from `/init`).
+- Previous issue: [[3|starter skills for Claude Code]] — install these *after* you're comfortable with the permission model above.
