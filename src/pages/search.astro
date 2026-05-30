@@ -1,0 +1,106 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<Layout title="Search — ai-features" description="Full-text search across issues and artifacts.">
+  <article>
+    <header class="mb-8 border-b border-neutral-200 pb-6 dark:border-neutral-800">
+      <div class="font-mono text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+        Search
+      </div>
+      <h1 class="mt-2 text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl dark:text-neutral-50">
+        Results for <span id="query" class="text-emerald-600 dark:text-emerald-400">…</span>
+      </h1>
+      <p class="mt-3 font-mono text-xs text-neutral-500" id="result-status">Searching…</p>
+    </header>
+
+    <ul id="results" class="space-y-6"></ul>
+
+    <template id="result-template">
+      <li class="border-b border-neutral-200 pb-6 last:border-b-0 dark:border-neutral-800">
+        <a class="block group" href="#">
+          <div class="flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-wider">
+            <span class="result-badge rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-emerald-700 dark:text-emerald-300"></span>
+          </div>
+          <h2 class="result-title mt-2 text-lg font-semibold tracking-tight text-neutral-950 group-hover:text-emerald-600 dark:text-neutral-50 dark:group-hover:text-emerald-400"></h2>
+          <p class="result-excerpt mt-2 text-sm text-neutral-600 dark:text-neutral-400"></p>
+        </a>
+      </li>
+    </template>
+
+    <div id="empty-state" class="hidden border border-dashed border-neutral-200 px-6 py-12 text-center dark:border-neutral-800">
+      <p class="font-mono text-sm text-neutral-500">No results found.</p>
+      <p class="mt-2 font-mono text-xs text-neutral-500">Try a different query, or browse <a href={base || '/'} class="text-emerald-600 hover:underline dark:text-emerald-400">issues</a> and <a href={`${base}/library`} class="text-emerald-600 hover:underline dark:text-emerald-400">library</a>.</p>
+    </div>
+  </article>
+
+  <script define:vars={{ base }}>
+    (async () => {
+      const params = new URLSearchParams(location.search);
+      const q = (params.get('q') ?? '').trim();
+      const queryEl = document.getElementById('query');
+      const statusEl = document.getElementById('result-status');
+      const listEl = document.getElementById('results');
+      const emptyEl = document.getElementById('empty-state');
+      const template = document.getElementById('result-template');
+
+      queryEl.textContent = q ? `"${q}"` : '(empty)';
+      document.title = q ? `Search: ${q} — ai-features` : 'Search — ai-features';
+
+      if (!q) {
+        statusEl.textContent = 'Type a query in the header search to begin.';
+        return;
+      }
+
+      let pagefind;
+      try {
+        pagefind = await import(/* @vite-ignore */ `${base}/pagefind/pagefind.js`);
+        await pagefind.options({ baseUrl: `${base}/` });
+      } catch (err) {
+        statusEl.textContent = 'Search index unavailable. Run `pnpm build` to generate it.';
+        console.error('Failed to load Pagefind', err);
+        return;
+      }
+
+      const { results } = await pagefind.search(q);
+
+      if (results.length === 0) {
+        statusEl.textContent = '0 results';
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      statusEl.textContent = `${results.length} result${results.length === 1 ? '' : 's'}`;
+
+      const data = await Promise.all(results.slice(0, 50).map((r) => r.data()));
+      for (const item of data) {
+        const node = template.content.firstElementChild.cloneNode(true);
+        const link = node.querySelector('a');
+        link.href = item.url;
+
+        const meta = item.meta ?? {};
+        const filters = item.filters ?? {};
+        const type = meta.type ?? filters.type?.[0] ?? '';
+        let badge = 'Page';
+        if (type === 'issue') {
+          const n = meta.issueNumber ? String(meta.issueNumber).padStart(3, '0') : '';
+          badge = n ? `Issue #${n}` : 'Issue';
+        } else if (type === 'artifact') {
+          const at = meta.artifactType ?? '';
+          badge = at ? `Artifact · ${at}` : 'Artifact';
+        }
+        node.querySelector('.result-badge').textContent = badge;
+
+        const title = meta.title ?? item.url;
+        node.querySelector('.result-title').textContent = title;
+
+        const excerpt = item.excerpt ?? '';
+        node.querySelector('.result-excerpt').innerHTML = excerpt;
+
+        listEl.appendChild(node);
+      }
+    })();
+  </script>
+</Layout>
