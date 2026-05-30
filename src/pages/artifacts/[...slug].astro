@@ -57,8 +57,9 @@ const playbookBodyClass =
   <article
     data-pagefind-body
     data-pagefind-meta={`type:artifact, artifactType:${d.type}, title:${d.title}`}
-    data-pagefind-filter="type:artifact"
   >
+    <div data-pagefind-filter={`type:${d.type}`} hidden></div>
+    <div data-pagefind-filter={`topic:${d.topic}`} hidden></div>
     <a href={`${base}/library`} class="font-mono text-xs text-neutral-500 hover:text-emerald-400">
       ← Library
     </a>

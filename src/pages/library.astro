@@ -2,50 +2,286 @@
 import { getCollection } from 'astro:content';
 import Layout from '../layouts/Layout.astro';
 
-const artifacts = (await getCollection('artifacts')).sort(
+const all = (await getCollection('artifacts')).sort(
   (a, b) => b.data.dateAdded.getTime() - a.data.dateAdded.getTime(),
 );
+
+const topicOrder = [
+  'code-review',
+  'testing',
+  'debugging',
+  'refactoring',
+  'docs-and-writing',
+  'infra-and-devops',
+  'data-and-analysis',
+  'meta-prompting',
+  'skills',
+] as const;
+
+const byTopic = new Map<string, typeof all>();
+for (const a of all) {
+  const list = byTopic.get(a.data.topic) ?? [];
+  list.push(a);
+  byTopic.set(a.data.topic, list);
+}
+const topics = topicOrder.filter((t) => byTopic.has(t));
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <Layout title="Library — ai-features" description="A growing collection of prompts, skills, hooks, and other AI-tooling artifacts.">
-  <section class="mb-10">
-    <h1 class="text-3xl font-semibold tracking-tight text-neutral-50 sm:text-4xl">
+  <section class="mb-8">
+    <h1 class="text-3xl font-semibold tracking-tight text-neutral-950 sm:text-4xl dark:text-neutral-50">
       Library
     </h1>
-    <p class="mt-3 max-w-prose text-neutral-400">
+    <p class="mt-3 max-w-prose text-neutral-600 dark:text-neutral-400">
       Prompts, skills, hooks, slash commands, subagents, settings snippets, and
       playbooks — collected from the digest and ready to drop into your setup.
     </p>
   </section>
 
-  <section>
-    <h2 class="mb-4 font-mono text-xs uppercase tracking-wider text-neutral-500">
-      {artifacts.length} artifact{artifacts.length === 1 ? '' : 's'}
-    </h2>
-    <ul class="grid gap-4 sm:grid-cols-2">
-      {artifacts.map((artifact) => (
-        <li>
-          <a
-            href={`${base}/artifacts/${artifact.id}`}
-            class="group block h-full rounded-md border border-neutral-800 bg-neutral-900/40 p-4 transition hover:border-emerald-500/60 hover:bg-neutral-900"
-          >
-            <div class="flex items-center justify-between gap-2">
-              <span class="rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-300">
-                {artifact.data.type}
-              </span>
-              <span class="font-mono text-[10px] uppercase tracking-wider text-neutral-500">
-                {artifact.data.topic}
-              </span>
-            </div>
-            <h3 class="mt-3 font-medium text-neutral-100 group-hover:text-emerald-400">
-              {artifact.data.title}
-            </h3>
-            <p class="mt-2 text-sm text-neutral-400">{artifact.data.summary}</p>
-          </a>
-        </li>
-      ))}
-    </ul>
+  <section
+    id="facet-bar"
+    class="mb-8 border-y border-neutral-200 py-4 dark:border-neutral-800"
+    aria-label="Filter library"
+  >
+    <div class="space-y-3">
+      <div>
+        <div class="mb-2 font-mono text-[10px] uppercase tracking-wider text-neutral-500">
+          Type
+        </div>
+        <div id="type-chips" class="flex flex-wrap gap-2">
+          <span class="font-mono text-xs text-neutral-500">Loading…</span>
+        </div>
+      </div>
+      <div>
+        <div class="mb-2 font-mono text-[10px] uppercase tracking-wider text-neutral-500">
+          Topic
+        </div>
+        <div id="topic-chips" class="flex flex-wrap gap-2">
+          <span class="font-mono text-xs text-neutral-500">Loading…</span>
+        </div>
+      </div>
+      <div class="flex items-center justify-between gap-3 pt-1">
+        <p id="facet-status" class="font-mono text-xs text-neutral-500">
+          {all.length} artifact{all.length === 1 ? '' : 's'} · grouped by topic
+        </p>
+        <button
+          id="clear-filters"
+          type="button"
+          class="hidden font-mono text-xs text-emerald-600 hover:underline dark:text-emerald-400"
+        >
+          Clear filters
+        </button>
+      </div>
+    </div>
   </section>
+
+  <section id="grouped-view">
+    {topics.map((topic) => (
+      <div data-topic-section class="mb-12">
+        <h2 class="mb-4 border-b border-neutral-200 pb-2 font-mono text-xs uppercase tracking-wider text-neutral-500 dark:border-neutral-800">
+          {topic} <span class="ml-1 text-neutral-600">({byTopic.get(topic)!.length})</span>
+        </h2>
+        <ul class="grid gap-4 sm:grid-cols-2">
+          {byTopic.get(topic)!.map((artifact) => (
+            <li>
+              <a
+                href={`${base}/artifacts/${artifact.id}/`}
+                class="group block h-full rounded-md border border-neutral-200 bg-white p-4 transition hover:border-emerald-500/60 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:bg-neutral-900"
+              >
+                <div class="flex items-center justify-between gap-2">
+                  <span class="rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                    {artifact.data.type}
+                  </span>
+                  <span class="font-mono text-[10px] uppercase tracking-wider text-neutral-500">
+                    {artifact.data.topic}
+                  </span>
+                </div>
+                <h3 class="mt-3 font-medium text-neutral-900 group-hover:text-emerald-600 dark:text-neutral-100 dark:group-hover:text-emerald-400">
+                  {artifact.data.title}
+                </h3>
+                <p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">{artifact.data.summary}</p>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))}
+  </section>
+
+  <section id="flat-view" class="hidden">
+    <ul id="flat-results" class="grid gap-4 sm:grid-cols-2"></ul>
+    <p id="flat-empty" class="hidden border border-dashed border-neutral-200 px-6 py-12 text-center font-mono text-sm text-neutral-500 dark:border-neutral-800">
+      No artifacts match these filters.
+    </p>
+  </section>
+
+  <template id="card-template">
+    <li>
+      <a
+        class="group block h-full rounded-md border border-neutral-200 bg-white p-4 transition hover:border-emerald-500/60 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:bg-neutral-900"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <span class="card-type rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-emerald-700 dark:text-emerald-300"></span>
+          <span class="card-topic font-mono text-[10px] uppercase tracking-wider text-neutral-500"></span>
+        </div>
+        <h3 class="card-title mt-3 font-medium text-neutral-900 group-hover:text-emerald-600 dark:text-neutral-100 dark:group-hover:text-emerald-400"></h3>
+        <p class="card-summary mt-2 text-sm text-neutral-600 dark:text-neutral-400"></p>
+      </a>
+    </li>
+  </template>
+
+  <script define:vars={{ base }}>
+    (async () => {
+      const typeChips = document.getElementById('type-chips');
+      const topicChips = document.getElementById('topic-chips');
+      const status = document.getElementById('facet-status');
+      const clearBtn = document.getElementById('clear-filters');
+      const grouped = document.getElementById('grouped-view');
+      const flat = document.getElementById('flat-view');
+      const flatResults = document.getElementById('flat-results');
+      const flatEmpty = document.getElementById('flat-empty');
+      const cardTpl = document.getElementById('card-template');
+
+      const selected = { type: new Set(), topic: new Set() };
+
+      let pagefind;
+      try {
+        pagefind = await import(/* @vite-ignore */ `${base}/pagefind/pagefind.js`);
+        await pagefind.options({ baseUrl: `${base}/` });
+      } catch (err) {
+        typeChips.innerHTML = '';
+        topicChips.innerHTML = '';
+        status.textContent = 'Filter index unavailable. Run `pnpm build` to enable filtering.';
+        console.error('Failed to load Pagefind', err);
+        return;
+      }
+
+      const filters = await pagefind.filters();
+
+      function renderChips(container, facet, counts) {
+        container.innerHTML = '';
+        const entries = Object.entries(counts).sort((a, b) => a[0].localeCompare(b[0]));
+        if (entries.length === 0) {
+          container.innerHTML = '<span class="font-mono text-xs text-neutral-500">—</span>';
+          return;
+        }
+        for (const [value, count] of entries) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.dataset.facet = facet;
+          btn.dataset.value = value;
+          btn.className =
+            'inline-flex items-center gap-1 rounded-sm border border-neutral-300 bg-white px-2 py-1 font-mono text-[11px] uppercase tracking-wider text-neutral-700 transition hover:border-emerald-500/60 hover:text-emerald-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:text-emerald-400';
+          btn.innerHTML = `<span>${value}</span><span class="text-neutral-500">(${count})</span>`;
+          btn.addEventListener('click', () => toggle(facet, value, btn));
+          container.appendChild(btn);
+        }
+      }
+
+      function setChipState(btn, on) {
+        if (on) {
+          btn.classList.add('border-emerald-500/60', 'bg-emerald-500/10', 'text-emerald-700', 'dark:text-emerald-300');
+          btn.classList.remove('border-neutral-300', 'bg-white', 'text-neutral-700', 'dark:border-neutral-700', 'dark:bg-neutral-900', 'dark:text-neutral-300');
+        } else {
+          btn.classList.remove('border-emerald-500/60', 'bg-emerald-500/10', 'text-emerald-700', 'dark:text-emerald-300');
+          btn.classList.add('border-neutral-300', 'bg-white', 'text-neutral-700', 'dark:border-neutral-700', 'dark:bg-neutral-900', 'dark:text-neutral-300');
+        }
+      }
+
+      function toggle(facet, value, btn) {
+        const set = selected[facet];
+        if (set.has(value)) {
+          set.delete(value);
+          setChipState(btn, false);
+        } else {
+          set.add(value);
+          setChipState(btn, true);
+        }
+        apply();
+      }
+
+      function buildCard(item) {
+        const node = cardTpl.content.firstElementChild.cloneNode(true);
+        const link = node.querySelector('a');
+        link.href = item.url;
+        node.querySelector('.card-type').textContent = item.type ?? '';
+        node.querySelector('.card-topic').textContent = item.topic ?? '';
+        node.querySelector('.card-title').textContent = item.title ?? '(untitled)';
+        node.querySelector('.card-summary').textContent = item.summary ?? '';
+        return node;
+      }
+
+      async function apply() {
+        const anyOn = selected.type.size > 0 || selected.topic.size > 0;
+        clearBtn.classList.toggle('hidden', !anyOn);
+
+        if (!anyOn) {
+          flat.classList.add('hidden');
+          grouped.classList.remove('hidden');
+          status.textContent = `${countAll(filters)} artifact${countAll(filters) === 1 ? '' : 's'} · grouped by topic`;
+          return;
+        }
+
+        const filterObj = {};
+        if (selected.type.size) filterObj.type = { any: [...selected.type] };
+        if (selected.topic.size) filterObj.topic = { any: [...selected.topic] };
+
+        const { results } = await pagefind.search(null, { filters: filterObj });
+        grouped.classList.add('hidden');
+        flat.classList.remove('hidden');
+        flatResults.innerHTML = '';
+
+        if (results.length === 0) {
+          flatEmpty.classList.remove('hidden');
+          status.textContent = '0 results';
+          return;
+        }
+        flatEmpty.classList.add('hidden');
+
+        const data = await Promise.all(results.slice(0, 100).map((r) => r.data()));
+        for (const d of data) {
+          const meta = parseMeta(d.meta);
+          flatResults.appendChild(buildCard({
+            url: d.url,
+            type: meta.artifactType ?? '',
+            topic: extractTopic(d.filters),
+            title: meta.title ?? d.meta?.title ?? '',
+            summary: d.excerpt?.replace(/<[^>]+>/g, '').slice(0, 200) ?? '',
+          }));
+        }
+        status.textContent = `${results.length} result${results.length === 1 ? '' : 's'}`;
+      }
+
+      function countAll(filters) {
+        const t = filters.type ?? {};
+        return Object.values(t).reduce((s, n) => s + n, 0);
+      }
+
+      function parseMeta(meta) {
+        if (!meta || typeof meta !== 'object') return {};
+        return meta;
+      }
+
+      function extractTopic(filters) {
+        if (!filters || !filters.topic) return '';
+        const keys = Object.keys(filters.topic);
+        return keys[0] ?? '';
+      }
+
+      clearBtn.addEventListener('click', () => {
+        selected.type.clear();
+        selected.topic.clear();
+        for (const btn of document.querySelectorAll('#type-chips button, #topic-chips button')) {
+          setChipState(btn, false);
+        }
+        apply();
+      });
+
+      renderChips(typeChips, 'type', filters.type ?? {});
+      renderChips(topicChips, 'topic', filters.topic ?? {});
+      status.textContent = `${countAll(filters)} artifact${countAll(filters) === 1 ? '' : 's'} · grouped by topic`;
+    })();
+  </script>
 </Layout>
