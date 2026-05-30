@@ -1,0 +1,104 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  const artifacts = await getCollection('artifacts');
+  return artifacts.map((artifact) => ({
+    params: { slug: artifact.id },
+    props: { artifact },
+  }));
+}
+
+type Props = { artifact: CollectionEntry<'artifacts'> };
+const { artifact } = Astro.props;
+const { Content } = await render(artifact);
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const d = artifact.data;
+const conditional: Array<[string, string]> = [];
+if (d.type === 'prompt') conditional.push(['Target model', d.targetModel]);
+if (d.type === 'skill') conditional.push(['Install path', d.installPath]);
+if (d.type === 'settings-snippet') conditional.push(['Settings scope', d.settingsScope]);
+if (d.type === 'hook') conditional.push(['Hook event', d.hookEvent]);
+if (d.type === 'slash-command') conditional.push(['Command', `/${d.commandName}`]);
+---
+
+<Layout title={`${d.title} — Library`} description={d.summary}>
+  <article>
+    <a href={`${base}/library`} class="font-mono text-xs text-neutral-500 hover:text-emerald-400">
+      ← Library
+    </a>
+
+    <header class="mt-4 mb-8 border-b border-neutral-800 pb-6">
+      <div class="flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-wider">
+        <span class="rounded-sm border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-emerald-300">
+          {d.type}
+        </span>
+        <span class="text-neutral-500">·</span>
+        <span class="text-neutral-400">{d.topic}</span>
+        {d.deprecated && (
+          <>
+            <span class="text-neutral-500">·</span>
+            <span class="rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-amber-300">
+              deprecated
+            </span>
+          </>
+        )}
+      </div>
+      <h1 class="mt-3 text-3xl font-semibold tracking-tight text-neutral-50 sm:text-4xl">
+        {d.title}
+      </h1>
+      <p class="mt-3 max-w-prose text-neutral-400">{d.summary}</p>
+
+      <dl class="mt-5 grid grid-cols-1 gap-2 font-mono text-xs text-neutral-500 sm:grid-cols-2">
+        <div>
+          <dt class="inline text-neutral-600">Author:</dt>
+          {' '}<dd class="inline text-neutral-300">{d.author}</dd>
+        </div>
+        <div>
+          <dt class="inline text-neutral-600">Added:</dt>
+          {' '}
+          <dd class="inline text-neutral-300">
+            <time datetime={d.dateAdded.toISOString()}>{d.dateAdded.toISOString().slice(0, 10)}</time>
+          </dd>
+        </div>
+        {d.dateUpdated && (
+          <div>
+            <dt class="inline text-neutral-600">Updated:</dt>
+            {' '}
+            <dd class="inline text-neutral-300">
+              <time datetime={d.dateUpdated.toISOString()}>{d.dateUpdated.toISOString().slice(0, 10)}</time>
+            </dd>
+          </div>
+        )}
+        {conditional.map(([label, value]) => (
+          <div>
+            <dt class="inline text-neutral-600">{label}:</dt>
+            {' '}<dd class="inline text-neutral-300">{value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {d.tags && d.tags.length > 0 && (
+        <ul class="mt-4 flex flex-wrap gap-2">
+          {d.tags.map((tag) => (
+            <li class="rounded-sm border border-neutral-800 bg-neutral-900 px-2 py-0.5 font-mono text-xs text-neutral-400">
+              #{tag}
+            </li>
+          ))}
+        </ul>
+      )}
+    </header>
+
+    <div class="prose prose-invert prose-neutral max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h2:mt-10 prose-h2:border-b prose-h2:border-neutral-800 prose-h2:pb-2 prose-a:text-emerald-400 prose-a:no-underline hover:prose-a:underline prose-code:rounded prose-code:bg-neutral-900 prose-code:px-1 prose-code:py-0.5 prose-code:text-emerald-300 prose-code:before:content-none prose-code:after:content-none prose-pre:bg-neutral-900 prose-pre:border prose-pre:border-neutral-800">
+      <Content />
+    </div>
+
+    <footer class="mt-12 border-t border-neutral-800 pt-6">
+      <a href={`${base}/library`} class="font-mono text-xs text-neutral-500 hover:text-emerald-400">
+        ← Library
+      </a>
+    </footer>
+  </article>
+</Layout>
