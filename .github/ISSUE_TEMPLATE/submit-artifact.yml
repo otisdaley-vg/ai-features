@@ -1,0 +1,109 @@
+name: Submit an artifact
+description: Propose a new prompt, skill, hook, slash-command, subagent, settings-snippet, or playbook for the AI Features library.
+title: "[artifact] <title>"
+labels: ["artifact-proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing an artifact! This form captures the metadata an editor needs to turn your idea into a library entry. The editor will follow up here, then open the PR. Please don't include anything internal, NDA-protected, or customer-specific — see the [content policy](../blob/main/CONTRIBUTING.md#content-policy).
+
+  - type: input
+    id: title
+    attributes:
+      label: Title
+      description: A short, descriptive name. Will appear in the library index.
+      placeholder: "e.g. Postgres query plan reviewer"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      description: What kind of artifact is this?
+      options:
+        - prompt
+        - skill
+        - hook
+        - slash-command
+        - subagent
+        - settings-snippet
+        - playbook
+    validations:
+      required: true
+
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      description: Pick the topic that best fits. (Controlled enum — must be one of these nine.)
+      options:
+        - code-review
+        - testing
+        - debugging
+        - refactoring
+        - docs-and-writing
+        - infra-and-devops
+        - data-and-analysis
+        - meta-prompting
+        - skills
+    validations:
+      required: true
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One sentence — what does this artifact do and when would you reach for it?
+      placeholder: "e.g. Reviews Postgres EXPLAIN output and flags sequential scans on large tables."
+    validations:
+      required: true
+
+  - type: input
+    id: author
+    attributes:
+      label: Author
+      description: How you'd like to be attributed.
+      placeholder: "e.g. Otis Daley"
+    validations:
+      required: true
+
+  - type: textarea
+    id: body
+    attributes:
+      label: Artifact body
+      description: The actual content — the prompt text, the skill definition, the hook script, etc. Paste it in a fenced code block.
+      placeholder: |
+        ```
+        <your prompt / skill / hook / command body here>
+        ```
+      render: markdown
+    validations:
+      required: true
+
+  - type: input
+    id: tags
+    attributes:
+      label: Tags (optional)
+      description: Comma-separated free-form tags for searchability.
+      placeholder: "postgres, performance, sql"
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes for the editor (optional)
+      description: Anything else — caveats, related artifacts, where you've used it, etc.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: content-policy
+    attributes:
+      label: Content policy
+      description: Confirm before submitting.
+      options:
+        - label: This submission contains no internal, NDA-protected, or customer-specific information.
+          required: true
