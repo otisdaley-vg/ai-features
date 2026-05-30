@@ -1,0 +1,36 @@
+---
+issueNumber: 2
+title: "Client-side filtering without a framework"
+date: 2026-06-06
+editors:
+  - Otis Daley
+summary: >-
+  An archive page with topic-chip filtering, built with vanilla JS and
+  data-* attributes — no React, no Vue, no hydration cost.
+topicsCovered:
+  - astro
+  - vanilla-js
+  - ux
+  - filtering
+---
+
+## What's new
+
+The `/issues` archive page now ships with client-side topic filtering. Click a
+chip at the top of the page to narrow the list. Click again to deselect.
+Multiple chips compose with OR semantics — pick `astro` and `ux` and you'll
+see issues tagged with either.
+
+## Why no framework
+
+Astro ships zero JavaScript by default. Adding React or Vue just for a chip
+filter would mean hydrating a component tree to manage a `Set<string>`. The
+whole interaction is ~30 lines of inline JS reading `data-topics` off each
+row. The page stays static, the filter stays snappy.
+
+## Tip
+
+Use `data-active` rather than a class for toggle state on filter chips —
+your stylesheet can target `[data-active]` without you having to remember to
+add and remove a specific class, and the attribute serves as both the source
+of truth and the styling hook.
