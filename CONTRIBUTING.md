@@ -180,6 +180,14 @@ When an issue centers on a single idea or artifact, use these four sections in o
 
 A short tracer-bullet or update issue doesn't need all four — the seed issue uses freeform `## What's new` / `## Featured artifact` / `## Tip` / `## Heads-up` sections. The four canonical sections are the default when the issue has a single load-bearing idea.
 
+### Scheduling — queue an issue for a future date
+
+The `date` field is also the publish date. An issue whose `date` is in the future is queued: the file lives in `main`, but the site, RSS feed, OG images, and `/issues/<n>` URL all hide it until that date.
+
+- Merge as many future-dated issues as you like — each one appears on its own `date`.
+- The Pages workflow rebuilds daily at 13:00 UTC (see `.github/workflows/deploy.yml`), so a queued issue goes live within ~24 hours of its `date`.
+- In `pnpm dev`, future-dated issues are visible so you can preview before merging. They only get filtered in production builds.
+
 ## Local development
 
 ```sh

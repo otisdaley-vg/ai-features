@@ -1,7 +1,7 @@
 import { OGImageRoute } from 'astro-og-canvas';
-import { getCollection } from 'astro:content';
+import { getPublishedIssues } from '../../../content/published';
 
-const issues = await getCollection('issues');
+const issues = await getPublishedIssues();
 const pages = Object.fromEntries(
   issues.map((i) => [String(i.data.issueNumber), i.data]),
 );

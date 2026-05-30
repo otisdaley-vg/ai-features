@@ -1,8 +1,8 @@
 ---
-import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
+import { getPublishedIssues } from '../../content/published';
 
-const issues = (await getCollection('issues')).sort(
+const issues = (await getPublishedIssues()).sort(
   (a, b) => b.data.issueNumber - a.data.issueNumber,
 );
 
