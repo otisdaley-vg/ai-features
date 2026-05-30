@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import { getPublishedIssues } from '../content/published';
 import '../styles/global.css';
 
 interface Props {
@@ -14,7 +15,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const siteOrigin = Astro.site?.toString().replace(/\/$/, '') ?? '';
 const resolvedOgImage = ogImage ?? `${siteOrigin}${base}/og/default.png`;
 
-const issues = await getCollection('issues');
+const issues = await getPublishedIssues();
 const artifacts = await getCollection('artifacts');
 const contentTimestamps: number[] = [
   ...issues.map((i) => i.data.date.getTime()),
