@@ -1,0 +1,217 @@
+---
+issueNumber: 6
+title: "Starter — OpenSpec, spec-driven development with Claude Code"
+date: 2026-06-22
+editors:
+  - Otis Daley
+summary: >-
+  OpenSpec turns "ask the agent to code it" into "agree on the spec, then have
+  the agent build against it." A starter walkthrough — install, propose,
+  implement, archive — with the Claude Code slash commands and prompt patterns
+  that make it click.
+featuredArtifact:
+  title: "OpenSpec"
+  url: "https://github.com/Fission-AI/OpenSpec"
+  description: >-
+    A Node CLI for spec-driven development with AI agents. Scaffolds a
+    proposal-first workflow and ships Claude Code slash commands that drive it.
+topicsCovered:
+  - openspec
+  - claude-code
+  - spec-driven
+  - planning
+  - slash-commands
+---
+
+## The Idea
+
+The fastest way to get a wrong implementation out of an agent is to describe
+the feature in chat and say "build it." The agent fills in the gaps with
+plausible guesses, you spot the drift three files into the diff, and now
+you're reverse-engineering its assumptions instead of stating yours.
+
+OpenSpec inverts that. You write a short **change proposal** first — what's
+changing, why, and the behavior you expect — get it reviewed, then hand the
+approved spec to the agent as a contract. The spec is the cheapest place to
+course-correct: a typo in `proposal.md` takes seconds to fix; a half-broken
+diff takes an afternoon to re-read.
+
+For juniors this is the highest-leverage habit to pick up early. It forces
+you to say what you mean before any code is written, which is the part of
+software that doesn't get easier with bigger models.
+
+## How To
+
+### 1. Prerequisites
+
+OpenSpec is a Node CLI. You need Node 20.x or newer:
+
+```sh
+node --version
+npm --version
+```
+
+Then install OpenSpec globally:
+
+```sh
+npm install -g @fission-ai/openspec
+```
+
+Installing a global npm package is a trust decision — it can run install
+scripts and lives on your PATH. Check the source at
+[Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec) before
+running, and verify the install:
+
+```sh
+openspec --version
+```
+
+### 2. Initialise a project
+
+From the project root:
+
+```sh
+openspec init
+```
+
+That scaffolds:
+
+```
+openspec/
+├── project.md       # high-level project context
+├── AGENTS.md        # instructions agents follow for spec work
+├── specs/           # canonical "truth" of the system
+└── changes/         # in-flight proposals
+```
+
+It also patches your `CLAUDE.md` so Claude Code knows the OpenSpec
+conventions. Verify with:
+
+```sh
+grep -i openspec CLAUDE.md
+```
+
+### 3. Fill in `project.md` once
+
+Open `openspec/project.md` and write a paragraph each on:
+
+- What the project is.
+- Tech stack (languages, frameworks, key libraries).
+- Conventions (testing, code style, branching).
+- Constraints (deploy target, perf budgets, compliance).
+
+This file loads as context on every spec interaction. Ten minutes here saves
+re-explaining the same things in every chat.
+
+### 4. Propose a change
+
+Pick a feature. Scaffold a proposal:
+
+```sh
+openspec change new add-github-oauth
+```
+
+You'll get `openspec/changes/add-github-oauth/` with:
+
+- `proposal.md` — the **why**: problem, goals, non-goals, approach.
+- `tasks.md` — the **how**: ordered checklist of implementation steps.
+- `specs/` — the **what**: capability deltas (new/modified/removed behavior).
+
+In Claude Code, the slash command is the friendlier path. Enter plan mode
+first — drafting is exploratory and you don't want files written
+mid-thought:
+
+> `/openspec:proposal add-github-oauth` — I want users to sign in with
+> GitHub. We already have email/password; OAuth should sit alongside it,
+> not replace it. Focus on the spec — don't write code yet.
+
+### 5. Review and validate
+
+Before any code, read the proposal yourself. Then ask the agent for a
+second pass without letting it edit anything:
+
+> Read `openspec/changes/add-github-oauth/` and tell me what's missing or
+> ambiguous. Don't change anything.
+
+Then run the consistency check:
+
+```sh
+openspec validate add-github-oauth
+```
+
+`validate` is 30 seconds and catches contradictions the agent would
+otherwise hand-wave through. Don't skip it.
+
+### 6. Implement against the spec
+
+Once the proposal reads right:
+
+> `/openspec:apply add-github-oauth` — work through `tasks.md` in order,
+> run the test suite after each task, and stop if anything fails.
+
+The agent reads `proposal.md`, the deltas, and `tasks.md`, then ticks off
+tasks as it goes. When it drifts — and it will — point at the spec, not
+the diff:
+
+> The spec says sessions expire after 24h but you wrote 1h in
+> `auth/session.ts`. Fix the code to match the spec — don't change the
+> spec.
+
+### 7. Archive when shipped
+
+After the change merges:
+
+```sh
+openspec archive add-github-oauth
+```
+
+That rolls the deltas forward into `openspec/specs/` (the canonical truth)
+and moves the change folder under `changes/archive/`. The next proposal
+sees the new behavior as the baseline.
+
+The slash-command equivalent is `/openspec:archive <slug>`, which
+validates first and archives if it passes.
+
+### 8. CLI cheatsheet
+
+```sh
+openspec init                  # set up openspec/ in a project
+openspec change new <slug>     # scaffold a new proposal
+openspec change list           # show in-flight proposals
+openspec validate <slug>       # check a proposal for consistency
+openspec archive <slug>        # apply deltas, archive the change
+openspec specs list            # show all current capability specs
+```
+
+## Trade-offs / Pitfalls
+
+- **Proposals that describe code, not behavior.** "Users can sign in with
+  GitHub" is a spec. "Add a `GitHubAuthProvider` class to `auth/`" is an
+  implementation note pretending to be one. Specs that name files rot the
+  moment you refactor.
+- **Bundled changes.** One change = one cohesive concern. Bundling
+  unrelated work makes proposals slow to review and changes hard to roll
+  back.
+- **Skipping `validate`.** Agents will happily generate a proposal that
+  contradicts itself. The CLI check is cheap and the failure modes
+  downstream are not.
+- **Letting the code win arguments.** When Claude and the spec disagree,
+  the spec wins by default — that's the whole point. If the spec is
+  actually wrong, update it explicitly and re-validate. Don't let the
+  diff silently redefine the contract.
+- **Stale proposals.** Unarchived changes in `changes/` create ambiguity
+  about what's actually shipped. Archive promptly after merge.
+- **Global npm install trust.** `npm install -g` runs install scripts
+  and adds a binary to your PATH. Read the repo, pin to a known version
+  if you're cautious, and treat the CLI like any other tool with shell
+  access.
+
+## Artifacts referenced
+
+- [OpenSpec](https://github.com/Fission-AI/OpenSpec) — the CLI and source repo.
+- `openspec/AGENTS.md` (created by `openspec init`) — the exact instructions
+  your agents follow when working with specs. Worth reading before you
+  trust the workflow.
+- `/openspec:proposal`, `/openspec:apply`, `/openspec:archive` — the
+  Claude Code slash commands installed under `.claude/commands/` after
+  `openspec init`.
