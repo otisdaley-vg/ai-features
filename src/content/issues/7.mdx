@@ -1,0 +1,242 @@
+---
+issueNumber: 7
+title: "Starter — Git worktrees with Claude Code"
+date: 2026-06-02
+editors:
+  - Otis Daley
+summary: >-
+  Git worktrees give each Claude Code session its own checkout, branch, dev
+  server, and dependency cache. Use them for parallel agents, long-running
+  migrations, side-by-side experiments, and review work without trampling your
+  main working copy.
+featuredArtifact:
+  title: "git worktree"
+  url: "https://git-scm.com/docs/git-worktree"
+  description: >-
+    Git's built-in command for attaching multiple working trees to one
+    repository, each checked out to its own branch.
+topicsCovered:
+  - claude-code
+  - git
+  - worktrees
+  - parallel-agents
+  - workflow
+---
+
+## The Idea
+
+A git worktree is a second working directory attached to the same repository.
+It shares history with your main checkout, but has its own files on disk and
+its own checked-out branch.
+
+That's the mental model:
+
+**Same repo. Different folder. Different branch.**
+
+That maps neatly to Claude Code. If two Claude sessions share one checkout,
+they can rewrite the same files, trip over half-applied diffs, and fight over
+one dev server. Put each session in its own worktree and the file-level
+collisions disappear. Each agent gets an isolated sandbox while Git keeps the
+branches tied back to one repository.
+
+Use worktrees when you want real parallelism. Skip them when the task is so
+small that the setup cost is larger than the work.
+
+## How To
+
+### 1. Know the raw git command
+
+You do not need this every day, but the primitive is useful to understand:
+
+```sh
+git worktree add ../myrepo-feature-x feature/x
+```
+
+That creates `../myrepo-feature-x` as a separate checkout on branch
+`feature/x`. When you are done:
+
+```sh
+git worktree remove ../myrepo-feature-x
+```
+
+List everything Git knows about:
+
+```sh
+git worktree list
+```
+
+Prune stale metadata after deleting old worktree folders or branches:
+
+```sh
+git worktree prune
+```
+
+### 2. Let Claude Code create the worktree
+
+Claude Code wraps the setup with `--worktree` / `-w`. From inside your repo:
+
+```sh
+claude -w
+```
+
+That starts a new session in a fresh worktree on a generated branch name. If
+you already know the branch name you want:
+
+```sh
+claude -w feat/csv-export
+```
+
+Pair it with `--tmux` when you want the session opened in a tmux-managed pane:
+
+```sh
+claude -w feat/date-picker --tmux
+```
+
+This is the everyday path for "I want another isolated Claude session now."
+
+### 3. Run parallel feature work
+
+Say two tickets land in a Next.js app:
+
+- **#445** — Add CSV export to the reports page.
+- **#446** — Replace the date picker library.
+
+In two terminals:
+
+```sh
+claude -w feat/csv-export
+claude -w feat/date-picker
+```
+
+Each agent gets its own branch and checkout. Ask each one to run the dev
+server on a different port:
+
+```sh
+PORT=3001 npm run dev
+PORT=3002 npm run dev
+```
+
+Now you can review both in a browser at `localhost:3001` and `localhost:3002`
+instead of serialising the work through one branch and one port.
+
+The broader rule: parameterise anything global. Ports, log files, test
+databases, build output directories, and queues are not isolated just because
+the source files are.
+
+### 4. Try two approaches side by side
+
+Worktrees are excellent for genuine uncertainty:
+
+> Implement this once with React Query and once with SWR. Use separate
+> worktrees so I can compare the diffs and behavior.
+
+You get two branches, two working directories, and two reviewable outcomes.
+Merge the winner. Remove the loser.
+
+### 5. Review someone else's branch without moving yours
+
+Your main checkout can stay on the work you were doing. Start a separate
+review session:
+
+```sh
+claude -w review/their-branch
+```
+
+Then ask Claude to compare the branch against `main`, run the relevant tests,
+and write up findings. Your original checkout remains untouched.
+
+### 6. Use agent-managed worktrees when delegating
+
+Some agent orchestration flows can spawn child agents in isolated worktrees.
+Use that for fan-out: one parent session splits independent tasks across
+separate sandboxes, then reports the resulting paths or branches for review.
+
+The same rule applies as with human-driven `claude -w`: only delegate work
+that can proceed independently. If task B depends on task A's exact diff,
+parallel worktrees usually create more rebasing than leverage.
+
+## Mini Exercise
+
+Use any small local repo. The goal is to feel the workflow once before you
+need it on a real deadline.
+
+1. Start agent A:
+
+   ```sh
+   claude -w experiment/readme-map
+   ```
+
+   Ask it: "Add a README section listing every top-level file with a one-line
+   description."
+
+2. Start agent B:
+
+   ```sh
+   claude -w experiment/hello-action
+   ```
+
+   Ask it: "Add a GitHub Actions workflow that runs on push and echoes
+   'hello'."
+
+3. Let both run in parallel.
+
+4. Compare the branches from your original checkout:
+
+   ```sh
+   git diff main experiment/readme-map
+   git diff main experiment/hello-action
+   ```
+
+5. Merge what you want and remove what you do not.
+
+The exercise is deliberately small. You are building the muscle memory for
+branch isolation, not testing Claude's coding limits.
+
+## Trade-offs / Pitfalls
+
+- **One-line edits.** Worktrees have overhead: another folder, another branch,
+  usually another install or build cache. A typo fix does not need one.
+- **Shared external state.** Worktrees isolate files, not databases, Redis,
+  S3 buckets, queues, auth callbacks, or `.env` values. If two agents point at
+  the same shared service, they can still collide.
+- **Dependency weight.** Each worktree can need its own `node_modules`,
+  `.venv`, `target`, or build cache. In large repos that cost is real. Package
+  managers with shared stores, such as pnpm, reduce the pain but do not remove
+  it.
+- **Stacked PRs.** If branch B is built on branch A, separate worktrees mean
+  you must keep rebasing B as A changes. One checkout can be simpler until the
+  stack stabilises.
+- **Port fights.** Two worktrees running the same app still default to the
+  same port. Set `PORT`, `HOST`, output paths, and log paths explicitly.
+- **Cleanup drift.** Stale worktrees accumulate quietly. Make `git worktree
+  list` part of your weekly cleanup and run `git worktree prune` after deleting
+  old branches.
+
+## Cheatsheet
+
+| Action | Command |
+| --- | --- |
+| Start Claude in a fresh worktree | `claude -w` |
+| Start Claude in a named branch worktree | `claude -w <branch>` |
+| Open the worktree session in tmux | `claude -w <branch> --tmux` |
+| Create a worktree manually | `git worktree add <path> <branch>` |
+| List worktrees | `git worktree list` |
+| Remove a worktree | `git worktree remove <path>` |
+| Prune stale metadata | `git worktree prune` |
+
+## Artifacts referenced
+
+- [`git worktree`](https://git-scm.com/docs/git-worktree) — the underlying Git
+  feature Claude Code builds on for isolated checkouts.
+- `claude --help` — confirms the local CLI flags: `--worktree`, `-w`, and
+  `--tmux`.
+
+## Closing Thought
+
+Worktrees are not magic. They are a boring Git feature that happens to fit
+agentic development unusually well.
+
+Reach for them when isolation buys you parallelism, cleaner review, or
+side-by-side comparison. Stay in one checkout when the work is tiny, tightly
+stacked, or bound to shared external state. And when the branch is done, clean
+up the worktree.
